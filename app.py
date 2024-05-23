@@ -38,6 +38,10 @@ def calculate_score(profile):
 
     return min(score, 100)
 
+@app.route('/')
+def home():
+    return 'LinkedIn Analysis Tool Backend'
+
 @app.route('/score-profile', methods=['POST'])
 def score_profile():
     profiles = request.json.get('profiles', [])
@@ -48,4 +52,4 @@ def score_profile():
     return jsonify({'scores': scores})
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=False)
