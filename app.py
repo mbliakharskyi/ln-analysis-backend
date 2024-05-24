@@ -66,7 +66,6 @@ async def process_profiles(file_path):
         linkedin_values = data[linkedin_column].tolist()
     else:
         linkedin_values = []
-    linkedin_values = ["https://www.linkedin.com/in/weprice",]
 
     async with aiohttp.ClientSession() as session:
         tasks = [fetch_profile_data(session, url) for url in linkedin_values]
