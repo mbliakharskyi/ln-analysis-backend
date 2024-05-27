@@ -12,21 +12,42 @@ import tempfile
 UPLOAD_FOLDER = 'uploads'
 PILOTERR_API_URL = 'https://piloterr.com/api/v2/linkedin/profile/info'
 PILOTERR_API_KEY = os.environ.get('API_KEY')
+
+RATE_LIMIT = 5  # requests per second
+REQUEST_INTERVAL = 1 / RATE_LIMIT  # interval between requests
+
 app = Flask(__name__)
 CORS(app)
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-async def fetch_profile_data(session, url):
+async def fetch_profile_data(session, url, semaphore):
     headers = {
         'Content-Type': 'application/json',
         'x-api-key': PILOTERR_API_KEY
     }
     params = {'query': url}
-    async with session.get(PILOTERR_API_URL, headers=headers, params=params) as response:
-        return await response.json()
-    
+
+    async with semaphore:
+        await asyncio.sleep(REQUEST_INTERVAL)  # Ensure the delay between requests
+        for attempt in range(3):  # Retry logic
+            try:
+                asyncio.sleep(0.5)
+                async with session.get(PILOTERR_API_URL, headers=headers, params=params) as response:
+                    if response.status == 200:
+                        if response.content_type == 'application/json':
+                            return await response.json()
+                        else:
+                            print(f"Unexpected content type: {response.content_type}")
+                            return None
+                    else:
+                        print(f"Error fetching profile data: {response}")
+            except Exception as e:
+                print(f"Exception during fetch (attempt {attempt + 1}): {e}")
+            await asyncio.sleep(2 ** attempt)  # Exponential backoff
+        return None
+     
 def calculate_score(profile):
     score = 0
     # Example scoring logic
@@ -53,22 +74,32 @@ def calculate_score(profile):
     return min(score, 100)
 
 async def process_profiles(file_path):
-    # Read the Excel file
-    data = pd.read_excel(file_path)
-    # Rename columns
-    data.columns = list(make_unique_columns(data.iloc[0]))
+    # Read the Excel file, skipping the first row if it's meant to be data
+    data = pd.read_excel(file_path, header=None)
+    print("First few rows of data (including header row):", data.head())
+
+    # Assume the actual headers are in the first row of the data
+    data.columns = data.iloc[0]
     data = data[1:]
+
+    # Make column names unique if necessary
+    data.columns = list(make_unique_columns(data.columns))
+    print("Columns after setting unique names:", data.columns)
+
     # Ensure all columns have consistent types
     data = data.astype(str).fillna('')
+    print("Data after conversion to string and filling NaN:", data.head())
+
     # Extract "Person LinkedIn" column values
-    linkedin_column = "Person LinkedIn"
+    linkedin_column = "Person Linkedin"
     if linkedin_column in data.columns:
         linkedin_values = data[linkedin_column].tolist()
     else:
         linkedin_values = []
+    semaphore = asyncio.Semaphore(RATE_LIMIT)  # Semaphore to control the rate limit
 
     async with aiohttp.ClientSession() as session:
-        tasks = [fetch_profile_data(session, url) for url in linkedin_values]
+        tasks = [fetch_profile_data(session, url, semaphore) for url in linkedin_values]
         profiles = await asyncio.gather(*tasks)
         profiles_with_scores = []
         for profile_data in profiles:
@@ -139,4 +170,4 @@ async def download_file():
     return send_file(file_path, download_name='profiles_with_scores.xlsx', as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=False)
+    app.run(host="0.0.0.0", debug=True)
