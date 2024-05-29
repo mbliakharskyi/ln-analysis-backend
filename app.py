@@ -29,11 +29,11 @@ async def fetch_profile_data(session, url, semaphore):
     }
     params = {'query': url}
 
+    print('url:', url)
     async with semaphore:
         await asyncio.sleep(REQUEST_INTERVAL)  # Ensure the delay between requests
         for attempt in range(3):  # Retry logic
             try:
-                asyncio.sleep(0.5)
                 async with session.get(PILOTERR_API_URL, headers=headers, params=params) as response:
                     if response.status == 200:
                         if response.content_type == 'application/json':
@@ -41,8 +41,12 @@ async def fetch_profile_data(session, url, semaphore):
                         else:
                             print(f"Unexpected content type: {response.content_type}")
                             return None
+                    elif response.status == 404:
+                        print(f"Profile not found for URL {url}")
+                        return {'error': 'Profile not found', 'url': url}
                     else:
-                        print(f"Error fetching profile data: {response}")
+                        print(f"Error fetching profile data: HTTP {response.status} for URL {url}")
+                        return {'error': 'HTTP error', 'status': response.status, 'url': url}
             except Exception as e:
                 print(f"Exception during fetch (attempt {attempt + 1}): {e}")
             await asyncio.sleep(2 ** attempt)  # Exponential backoff
@@ -99,13 +103,21 @@ async def process_profiles(file_path):
     semaphore = asyncio.Semaphore(RATE_LIMIT)  # Semaphore to control the rate limit
 
     async with aiohttp.ClientSession() as session:
-        tasks = [fetch_profile_data(session, url, semaphore) for url in linkedin_values]
-        profiles = await asyncio.gather(*tasks)
+        tasks = [(url, fetch_profile_data(session, url, semaphore)) for url in linkedin_values]
+        results = await asyncio.gather(*[task[1] for task in tasks])
         profiles_with_scores = []
-        for profile_data in profiles:
-            score = calculate_score(profile_data)
-            profile_data['score'] = score
-            profiles_with_scores.append(profile_data)
+        for url, profile_data in zip(linkedin_values, results):
+            if 'error' not in profile_data:
+                score = calculate_score(profile_data)
+                profile_data['score'] = score
+                profile_data['url'] = url  # Attach URL to each profile
+                profiles_with_scores.append(profile_data)
+            else:
+                profile_data['score'] = "Not Found!"
+                profiles_with_scores.append(profile_data)
+
+                # Log the error or handle it according to your application's needs
+                print(f"Error retrieving profile: {profile_data['error']} for URL {profile_data.get('url', 'Unknown')}")
     return profiles_with_scores
 
 def make_unique_columns(columns):
