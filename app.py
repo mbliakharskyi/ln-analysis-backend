@@ -190,4 +190,4 @@ async def download_file():
     return send_file(file_path, download_name='profiles_with_scores.xlsx', as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=False)
