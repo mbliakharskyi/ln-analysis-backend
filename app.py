@@ -45,6 +45,9 @@ async def fetch_profile_data(session, url, semaphore):
                         else:
                             print(f"Unexpected content type: {response.content_type}")
                             return None
+                    elif response.status == 502:
+                        print(f"502 Bad Gateway for URL {url}")
+                        return {'error': '502 Bad Gateway', 'url': url}
                     elif response.status == 404:
                         print(f"Profile not found for URL {url}")
                         return {'error': 'Profile not found', 'url': url}
