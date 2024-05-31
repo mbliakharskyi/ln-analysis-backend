@@ -8,6 +8,7 @@ import aiohttp
 import asyncio
 from io import BytesIO
 import tempfile
+import math
 
 UPLOAD_FOLDER = 'uploads'
 PILOTERR_API_URL = 'https://piloterr.com/api/v2/linkedin/profile/info'
@@ -29,6 +30,9 @@ async def fetch_profile_data(session, url, semaphore):
     }
     params = {'query': url}
 
+    # Check if the URL is valid
+    if url is None or isinstance(url, float) and math.isnan(url) or url.strip() == "" or url == "nan":
+        return {'error': 'URL is blank or invalid', 'url': url}
     print('url:', url)
     async with semaphore:
         await asyncio.sleep(REQUEST_INTERVAL)  # Ensure the delay between requests
@@ -114,7 +118,7 @@ async def process_profiles(file_path):
                 profile_data['url'] = url  # Attach URL to each profile
                 profiles_with_scores.append(profile_data)
             else:
-                profile_data['score'] = "Not Found!"
+                profile_data['score'] = profile_data["error"]
                 profiles_with_scores.append(profile_data)
 
                 # Log the error or handle it according to your application's needs
