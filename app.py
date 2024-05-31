@@ -13,7 +13,7 @@ UPLOAD_FOLDER = 'uploads'
 PILOTERR_API_URL = 'https://piloterr.com/api/v2/linkedin/profile/info'
 PILOTERR_API_KEY = os.environ.get('API_KEY')
 
-RATE_LIMIT = 5  # requests per second
+RATE_LIMIT = 7  # requests per second
 REQUEST_INTERVAL = 1 / RATE_LIMIT  # interval between requests
 
 app = Flask(__name__)
@@ -54,7 +54,6 @@ async def fetch_profile_data(session, url, semaphore):
      
 def calculate_score(profile):
     score = 0
-    # Example scoring logic
     if profile.get('photo_url'):
         score += 5
     if profile.get('background_url'):
@@ -75,6 +74,8 @@ def calculate_score(profile):
         score += min(len(profile['articles']), 20)
     score += min(profile.get('follower_count', 0) // 10000, 20)
     score += min(len(profile.get('recommendations', [])) * 2, 10)
+    if profile.get('connection_count'):
+        score += min(profile['connection_count'] // 100, 20)
     return min(score, 100)
 
 async def process_profiles(file_path):
