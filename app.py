@@ -62,27 +62,34 @@ async def fetch_profile_data(session, url, semaphore):
 def calculate_score(profile):
     score = 0
     if profile.get('photo_url'):
-        score += 5
+        score += 10
     if profile.get('background_url'):
         score += 5
     if profile.get('headline'):
         score += 5
     if profile.get('summary'):
-        score += 5
-    if profile.get('experiences'):
-        score += 5
-    if profile.get('educations'):
-        score += 5
-    if profile.get('languages'):
-        score += 5
+        score += 10
+    # if profile.get('experiences'):
+    #     score += 5
+    # if profile.get('educations'):
+    #     score += 5
+    # if profile.get('languages'):
+    #     score += 5
     if profile.get('activities'):
-        score += 5
+        score += 10
     if profile.get('articles'):
-        score += min(len(profile['articles']), 20)
+        score += min(len(profile['articles']) * 2, 20)
     score += min(profile.get('follower_count', 0) // 10000, 20)
     score += min(len(profile.get('recommendations', [])) * 2, 10)
     if profile.get('connection_count'):
-        score += min(profile['connection_count'] // 100, 20)
+        connection_count = profile['connection_count']
+        if connection_count < 200:
+            connection_score = 0
+        elif connection_count < 500:
+            connection_score = 5
+        else:
+            connection_score = 5 + ((connection_count - 500) // 100)
+        score += min(connection_score, 20)
     return min(score, 100)
 
 async def process_profiles(file_path):
