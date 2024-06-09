@@ -69,14 +69,6 @@ def calculate_score(profile):
         score += 5
     if profile.get('summary'):
         score += 10
-    # if profile.get('experiences'):
-    #     score += 5
-    # if profile.get('educations'):
-    #     score += 5
-    # if profile.get('languages'):
-    #     score += 5
-    if profile.get('activities'):
-        score += 10
     if profile.get('articles'):
         score += min(len(profile['articles']) * 2, 20)
     score += min(profile.get('follower_count', 0) // 10000, 20)
