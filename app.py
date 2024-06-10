@@ -66,13 +66,13 @@ def calculate_score(profile):
     if profile.get('background_url'):
         score += 5
     if profile.get('headline'):
-        score += 5
-    if profile.get('summary'):
         score += 10
+    if profile.get('summary'):
+        score += 5
     if profile.get('articles'):
-        score += min(len(profile['articles']) * 2, 20)
-    score += min(profile.get('follower_count', 0) // 10000, 20)
-    score += min(len(profile.get('recommendations', [])) * 2, 10)
+        score += min(len(profile['articles']) * 10, 20)
+    score += min(profile.get('follower_count', 0) // 10000, 30)
+    score += min(len(profile.get('recommendations', [])) * 10, 20)
     if profile.get('connection_count'):
         connection_count = profile['connection_count']
         if connection_count < 200:
@@ -80,8 +80,8 @@ def calculate_score(profile):
         elif connection_count < 500:
             connection_score = 5
         else:
-            connection_score = 5 + ((connection_count - 500) // 100)
-        score += min(connection_score, 20)
+            connection_score = 20 + ((connection_count - 500) // 100)
+        score += min(connection_score, 30)
     return min(score, 100)
 
 async def process_profiles(file_path):
