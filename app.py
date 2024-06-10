@@ -64,15 +64,15 @@ def calculate_score(profile):
     if profile.get('photo_url'):
         score += 10
     if profile.get('background_url'):
-        score += 5
+        score += 10
     if profile.get('headline'):
         score += 10
     if profile.get('summary'):
-        score += 5
+        score += 10
     if profile.get('articles'):
-        score += min(len(profile['articles']) * 10, 20)
+        score += min(len(profile['articles']) * 4, 20)
     score += min(profile.get('follower_count', 0) // 10000, 30)
-    score += min(len(profile.get('recommendations', [])) * 10, 20)
+    score += min(len(profile.get('recommendations', [])) * 4, 20)
     if profile.get('connection_count'):
         connection_count = profile['connection_count']
         if connection_count < 200:
