@@ -39,6 +39,10 @@ async def fetch_profile_data(session, url, semaphore):
                         print(f"502 Bad Gateway for URL {url}")
                         return {'error': '502 Bad Gateway', 'url': url}
                     elif response.status == 404:
+                        profile_data={}
+                        profile_data['url'] = url  # Attach URL to the profile data
+                        profile_data['error'] = "Profile Not Found" 
+                        await send_to_google_sheets(profile_data)
                         print(f"Profile not found for URL {url}")
                         return {'error': 'Profile not found', 'url': url}
                     else:
@@ -113,15 +117,18 @@ async def send_to_google_sheets(profile_data):
     if 'error' not in profile_data:
         score = calculate_score(profile_data)
         profile_data['score'] = score
-    else:
-        profile_data['score'] = profile_data["error"]
-        print(f"Error retrieving profile: {profile_data['error']} for URL {profile_data.get('url', 'Unknown')}")
-    
-    send_data = {
+        send_data = {
         "FullName": profile_data.get('full_name', 'N/A'),
         "LinkedIn URL": profile_data['url'],
         "Score": profile_data['score'],
     }
+    else:
+        send_data = {
+        "FullName": "",
+        "LinkedIn URL": profile_data['url'],
+        "Score": profile_data['error'],
+    }
+        print(f"Error retrieving profile: {profile_data['error']} for URL {profile_data.get('url', 'Unknown')}")
     
     async with aiohttp.ClientSession() as session:
         headers = {
