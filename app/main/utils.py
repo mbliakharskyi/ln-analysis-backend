@@ -23,7 +23,7 @@ async def fetch_profile_data(session, url, semaphore):
         return {'error': 'URL is blank or invalid', 'url': url}
     async with semaphore:
         await asyncio.sleep(REQUEST_INTERVAL)  # Ensure the delay between requests
-        for attempt in range(3):  # Retry logic
+        for attempt in range(1):  # Retry logic
             try:
                 async with session.get(PILOTERR_API_URL, headers=headers, params=params) as response:
                     if response.status == 200:
@@ -90,7 +90,7 @@ async def process_profiles(file_path):
     data = data.astype(str).fillna('')
     print("Data after conversion to string and filling NaN:", data.head())
 
-    linkedin_column = "Person Linkedin"
+    linkedin_column = "Person LinkedIn"
     if linkedin_column in data.columns:
         linkedin_values = data[linkedin_column].tolist()
     else:
