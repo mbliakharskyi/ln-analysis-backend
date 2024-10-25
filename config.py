@@ -5,8 +5,8 @@ class Config:
     UPLOAD_FOLDER = 'uploads'
     PILOTERR_API_URL = 'https://piloterr.com/api/v2/linkedin/profile/info'
     PILOTERR_API_KEY = os.environ.get('API_KEY')
-    RATE_LIMIT = 7  # requests per second
-    REQUEST_INTERVAL = 1 / RATE_LIMIT  # interval between requests
+    RATE_LIMIT = 7  
+    REQUEST_INTERVAL = 1 / RATE_LIMIT 
 
 
 class DevelopmentConfig(Config):
